@@ -27,7 +27,7 @@ let buttonPressFrame = 0;
 // Random button settings
 let buttonWidth = 68;
 let buttonHeight = 68;
-let buttonY = 680; // Adjusted for 720px height canvas
+let buttonY = 0; // Will be calculated in setup based on canvas height
 
 const DITHER = [[0, 2], [3, 1]];
 
@@ -61,15 +61,21 @@ function preload() {
 }
 
 function setup() {
-  // Larger canvas positioned center-left
-  let canvas = createCanvas(720, 720);
-  canvas.position(150, 0); // More margin from left edge, closer to center-left
+  // Fixed canvas size that fits iPad landscape
+  let canvasSize = 640; // Safe size for iPad landscape
+  
+  // Canvas positioned center-left
+  let canvas = createCanvas(canvasSize, canvasSize);
+  canvas.position(150, 20); // 20px from top, 150px from left
   pixelDensity(1);
   frameRate(60);
   
   capture = createCapture(VIDEO);
-  capture.size(720, 720);
+  capture.size(width, height); // Use canvas dimensions
   capture.hide();
+  
+  // Set button position relative to canvas height
+  buttonY = height - 60; // 60px from bottom
   
   checkML5();
   
