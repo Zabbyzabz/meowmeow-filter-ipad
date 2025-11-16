@@ -1,4 +1,4 @@
-/// === PHOTOBOOTH - Y2K GLITCH DIGITAL AESTHETIC ===
+// === PHOTOBOOTH - Y2K GLITCH DIGITAL AESTHETIC ===
 // iPad Installation Version - Optimized for gallery projection
 
 let vid, overlayImg, catEarsImg, randomButtonImg, capture;
@@ -57,9 +57,9 @@ function preload() {
 }
 
 function setup() {
-  // Left-aligned canvas
+  // Left-aligned canvas with margin
   let canvas = createCanvas(640, 640);
-  canvas.position(0, 0);
+  canvas.position(80, 0); // 80px margin from left edge
   pixelDensity(1);
   frameRate(60);
   
@@ -78,6 +78,10 @@ function setup() {
   document.body.style.background = '#000';
   document.body.style.margin = '0';
   document.body.style.overflow = 'hidden';
+  
+  // Hide p5.js default fullscreen button
+  let fsButton = document.querySelector('.p5-fullscreen-button');
+  if (fsButton) fsButton.style.display = 'none';
   
   // Create fullscreen button
   createFullscreenButton();
