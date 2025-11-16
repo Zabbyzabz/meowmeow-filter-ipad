@@ -20,10 +20,14 @@ let posterizeLevels = 4;
 let overlayPixelSize = 2;
 let webcamZoom = 1.0;
 
+// Button feedback
+let buttonPressed = false;
+let buttonPressFrame = 0;
+
 // Random button settings
 let buttonWidth = 68;
 let buttonHeight = 68;
-let buttonY = 610;
+let buttonY = 680; // Adjusted for 720px height canvas
 
 const DITHER = [[0, 2], [3, 1]];
 
@@ -57,14 +61,14 @@ function preload() {
 }
 
 function setup() {
-  // Left-aligned canvas with margin
-  let canvas = createCanvas(640, 640);
-  canvas.position(80, 0); // 80px margin from left edge
+  // Larger canvas positioned center-left
+  let canvas = createCanvas(720, 720);
+  canvas.position(150, 0); // More margin from left edge, closer to center-left
   pixelDensity(1);
   frameRate(60);
   
   capture = createCapture(VIDEO);
-  capture.size(640, 640);
+  capture.size(720, 720);
   capture.hide();
   
   checkML5();
@@ -406,25 +410,87 @@ function drawRandomButton() {
   push();
   imageMode(CENTER);
   let buttonX = width / 2;
-  image(randomButtonImg, buttonX, buttonY, buttonWidth, buttonHeight);
+  
+  // DEBUG: Draw hit area (remove this later)
+  noFill();
+  stroke(255, 0, 0, 100);
+  strokeWeight(2);
+  rectMode(CENTER);
+  rect(buttonX, buttonY, buttonWidth * 1.5, buttonHeight * 1.5);
+  
+  // Visual feedback when pressed
+  if (buttonPressed && frameCount - buttonPressFrame < 10) {
+    tint(255, 200); // Slight dim effect
+    image(randomButtonImg, buttonX, buttonY, buttonWidth * 0.95, buttonHeight * 0.95);
+  } else {
+    noTint();
+    image(randomButtonImg, buttonX, buttonY, buttonWidth, buttonHeight);
+  }
+  
+  // DEBUG: Show touch coordinates
+  fill(255);
+  noStroke();
+  textSize(10);
+  textAlign(CENTER);
+  text('Touch here to randomize', buttonX, buttonY + 50);
+  
   pop();
 }
 
 function mousePressed() {
-  // Check if click is on the random button
+  checkRandomButtonClick();
+  return false;
+}
+
+function touchStarted() {
+  // iPad/mobile touch support
+  // Force update mouseX/mouseY for touch events
+  if (touches.length > 0) {
+    mouseX = touches[0].x;
+    mouseY = touches[0].y;
+  }
+  
+  checkRandomButtonClick();
+  return false; // Prevent default
+}
+
+function touchEnded() {
+  return false; // Prevent default
+}
+
+function checkRandomButtonClick() {
+  // Check if click/touch is on the random button
   if (randomButtonImg) {
     let buttonX = width / 2;
-    let halfWidth = buttonWidth / 2;
-    let halfHeight = buttonHeight / 2;
+    let halfWidth = (buttonWidth * 1.5) / 2;  // 1.5x larger hit area
+    let halfHeight = (buttonHeight * 1.5) / 2;
     
-    if (mouseX > buttonX - halfWidth && mouseX < buttonX + halfWidth &&
-        mouseY > buttonY - halfHeight && mouseY < buttonY + halfHeight) {
+    // Get the actual mouse/touch position relative to canvas
+    let canvasX = mouseX;
+    let canvasY = mouseY;
+    
+    if (canvasX > buttonX - halfWidth && canvasX < buttonX + halfWidth &&
+        canvasY > buttonY - halfHeight && canvasY < buttonY + halfHeight) {
       randomizeEffects();
+      
+      // Add a visible flash to confirm it worked
+      background(255);
+      fill(0);
+      textSize(32);
+      textAlign(CENTER, CENTER);
+      text('RANDOMIZED!', width/2, height/2);
+      
+      return true;
     }
   }
+  return false;
 }
 
 function randomizeEffects() {
+  // Visual feedback
+  buttonPressed = true;
+  buttonPressFrame = frameCount;
+  
   // Randomize color settings
   brightnessBoost = random(0.8, 1.8);
   saturationBoost = random(1.0, 3.0);
