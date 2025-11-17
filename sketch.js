@@ -10,12 +10,17 @@ let pixelSize = 4;
 let colorSteps = 16;
 let contrastBoost = 1.3;
 let saturationBoost = 1.5;
-let brightnessBoost = 1.0;
+let brightnessBoost = 1.2;  // Increased from 1.0 to 1.2 for higher exposure
 
 let posterizeEnabled = false;
 let posterizeLevels = 4;
 let overlayPixelSize = 2;
 let webcamZoom = 1.0;
+
+// Halftone settings
+let halftoneEnabled = false;
+let halftoneSize = 4;
+let halftoneSpacing = 8;
 
 // Button feedback
 let buttonPressed = false;
@@ -88,7 +93,7 @@ function setup() {
   capture.hide();
   
   // Set button position relative to canvas height
-  buttonY = height - 38; // 60px from bottom
+  buttonY = height - 38; // 38px from bottom
   
   textFont('monospace');
   textAlign(CENTER, CENTER);
@@ -214,6 +219,15 @@ function draw() {
     drawY2KStyle();
   } catch(e) {
     console.error('Y2K style error:', e);
+  }
+  
+  // LAYER 1.5: Halftone effect (if enabled)
+  if (halftoneEnabled) {
+    try {
+      drawHalftone();
+    } catch(e) {
+      console.error('Halftone error:', e);
+    }
   }
   
   // LAYER 2: Flashing overlay (when face detected)
@@ -504,7 +518,7 @@ function drawRandomButton() {
   noStroke();
   textSize(10);
   textAlign(CENTER);
-  text('touch here', buttonX, buttonY + 10);  // Changed to +20
+  text('touch here', buttonX, buttonY + 10);  // Locked at +10
   
   pop();
 }
@@ -550,23 +564,71 @@ function checkRandomButtonClick() {
   return false;
 }
 
+function drawHalftone() {
+  loadPixels();
+  let pg = createGraphics(width, height);
+  pg.background(255);
+  
+  for (let y = 0; y < height; y += halftoneSpacing) {
+    for (let x = 0; x < width; x += halftoneSpacing) {
+      let index = (y * width + x) * 4;
+      let r = pixels[index];
+      let g = pixels[index + 1];
+      let b = pixels[index + 2];
+      
+      // CMYK-style color halftone
+      let cyan = 255 - r;
+      let magenta = 255 - g;
+      let yellow = 255 - b;
+      
+      // Cyan dots
+      let cyanSize = map(cyan, 0, 255, 0, halftoneSize);
+      pg.fill(0, 255, 255);
+      pg.noStroke();
+      pg.ellipse(x + halftoneSpacing * 0.25, y + halftoneSpacing * 0.25, cyanSize, cyanSize);
+      
+      // Magenta dots
+      let magentaSize = map(magenta, 0, 255, 0, halftoneSize);
+      pg.fill(255, 0, 255);
+      pg.ellipse(x + halftoneSpacing * 0.75, y + halftoneSpacing * 0.25, magentaSize, magentaSize);
+      
+      // Yellow dots
+      let yellowSize = map(yellow, 0, 255, 0, halftoneSize);
+      pg.fill(255, 255, 0);
+      pg.ellipse(x + halftoneSpacing * 0.5, y + halftoneSpacing * 0.75, yellowSize, yellowSize);
+    }
+  }
+  
+  blendMode(MULTIPLY);
+  image(pg, 0, 0);
+  blendMode(BLEND);
+  pg.remove();
+}
+
 function randomizeEffects() {
   // Visual feedback
   buttonPressed = true;
   buttonPressFrame = frameCount;
   
-  // Randomize color settings (safe ranges)
-  brightnessBoost = random(0.9, 1.6);  // Reduced range for stability
-  saturationBoost = random(1.2, 2.5);  // Reduced max from 3.0
-  contrastBoost = random(1.1, 2.0);    // Reduced max from 2.5
+  // Randomize color settings - SOFTER, less saturated like the reference images
+  brightnessBoost = random(1.1, 1.5);  // INCREASED for higher exposure (was 0.95-1.3)
+  saturationBoost = random(0.9, 1.8);   // REDUCED - can even desaturate (0.9) or boost gently
+  contrastBoost = random(1.0, 1.6);     // More subtle contrast
   
-  // Randomize pixelation (KEEP HIGHER for performance - avoid 1-3)
-  pixelSize = floor(random(4, 8));  // Changed from (1, 8) to (4, 8) - no tiny pixels!
-  overlayPixelSize = floor(random(2, 6));  // Changed from (1, 8) to (2, 6)
+  // Randomize pixelation - FULL RANGE as requested
+  pixelSize = floor(random(1, 9));  // 1-8 range (random gives 1-8.99, floor makes it 1-8)
+  overlayPixelSize = floor(random(2, 6));  // Keep overlay moderate for performance
   
-  // Posterize: 50% chance, but limited levels
+  // Posterize: 50% chance, limited levels as requested
   posterizeEnabled = random() > 0.5;
   if (posterizeEnabled) {
-    posterizeLevels = floor(random(4, 10));  // Changed from (2, 12) to (4, 10) - avoid extreme posterization
+    posterizeLevels = floor(random(4, 11));  // 4-10 range as requested
+  }
+  
+  // Halftone: 30% chance (less common since it's heavy)
+  halftoneEnabled = random() > 0.7;
+  if (halftoneEnabled) {
+    halftoneSize = floor(random(3, 7));      // Dot size: 3-6
+    halftoneSpacing = floor(random(6, 12));  // Spacing: 6-11
   }
 }
