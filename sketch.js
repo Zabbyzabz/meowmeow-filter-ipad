@@ -91,7 +91,7 @@ function setup() {
   capture.hide();
   
   // Set button position relative to canvas height
-  buttonY = height - 60; // 60px from bottom
+  buttonY = height - 36; // 60px from bottom
   
   textFont('monospace');
   textAlign(CENTER, CENTER);
@@ -456,7 +456,7 @@ function drawCatEars() {
     const topY = box._y * scaleY;
     const faceWidth = box._width * scaleX;
     
-    const earsWidth = faceWidth * 2.2;
+    const earsWidth = faceWidth * 1.7;
     const earsHeight = catEarsImg ? earsWidth * (catEarsImg.height / catEarsImg.width) : earsWidth;
     
     const earsX = centerX + 70;
