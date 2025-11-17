@@ -51,13 +51,25 @@ function preload() {
     vid.volume(0);
   });
   
-  vid.elt.addEventListener('error', () => {
+  vid.elt.addEventListener('error', (e) => {
+    console.warn('Video failed to load, continuing without it');
     vid = null;
   });
   
-  overlayImg = loadImage('overlay.png');
-  catEarsImg = loadImage('cat-ears.png');
-  randomButtonImg = loadImage('button.png');
+  overlayImg = loadImage('overlay.png', 
+    () => {},
+    () => console.warn('Overlay not found')
+  );
+  
+  catEarsImg = loadImage('cat-ears.png', 
+    () => {},
+    () => console.warn('Cat ears not found')
+  );
+  
+  randomButtonImg = loadImage('button.png',
+    () => {},
+    () => console.warn('Button not found')
+  );
 }
 
 function setup() {
@@ -70,45 +82,56 @@ function setup() {
   pixelDensity(1);
   frameRate(60);
   
-  capture = createCapture(VIDEO);
+  console.log('Canvas created');
+  
+  capture = createCapture(VIDEO, () => {
+    console.log('Webcam ready');
+  });
   capture.size(width, height); // Use canvas dimensions
   capture.hide();
   
   // Set button position relative to canvas height
   buttonY = height - 60; // 60px from bottom
   
-  checkML5();
-  
   textFont('monospace');
   textAlign(CENTER, CENTER);
-  
-  setInterval(spawnComment, random(2000, 4000));
   
   // Black background for entire page
   document.body.style.background = '#000';
   document.body.style.margin = '0';
   document.body.style.overflow = 'hidden';
   
-  // Hide p5.js default fullscreen button
-  let fsButton = document.querySelector('.p5-fullscreen-button');
-  if (fsButton) fsButton.style.display = 'none';
-  
   // Create fullscreen button
   createFullscreenButton();
+  
+  // Start face detection only after everything else is ready
+  setTimeout(() => {
+    checkML5();
+  }, 2000);
+  
+  // Start comments after delay
+  setTimeout(() => {
+    setInterval(spawnComment, random(2000, 4000));
+  }, 3000);
 }
 
 function createFullscreenButton() {
-  fullscreenBtn = createButton('FULLSCREEN');
-  fullscreenBtn.position(10, 10);
-  fullscreenBtn.style('padding', '8px 16px');
-  fullscreenBtn.style('font-size', '14px');
-  fullscreenBtn.style('background', 'rgba(50, 50, 50, 0.8)');
-  fullscreenBtn.style('color', 'rgba(255, 255, 255, 0.9)');
-  fullscreenBtn.style('border', '1px solid rgba(255, 255, 255, 0.3)');
+  fullscreenBtn = createButton('×');
+  fullscreenBtn.position(windowWidth - 30, 5);
+  fullscreenBtn.style('padding', '2px 8px');
+  fullscreenBtn.style('font-size', '20px');
+  fullscreenBtn.style('line-height', '1');
+  fullscreenBtn.style('background', 'rgba(0, 0, 0, 0.1)');
+  fullscreenBtn.style('color', 'rgba(255, 255, 255, 0.3)');
+  fullscreenBtn.style('border', 'none');
   fullscreenBtn.style('cursor', 'pointer');
-  fullscreenBtn.style('font-family', 'monospace');
-  fullscreenBtn.style('border-radius', '4px');
+  fullscreenBtn.style('font-family', 'arial');
+  fullscreenBtn.style('border-radius', '2px');
   fullscreenBtn.mousePressed(toggleFullscreen);
+  fullscreenBtn.touchStarted(() => {
+    toggleFullscreen();
+    return false;
+  });
 }
 
 function toggleFullscreen() {
@@ -120,8 +143,14 @@ function toggleFullscreen() {
 function checkML5() {
   if (typeof ml5 !== 'undefined') {
     ml5Loaded = true;
-    startFaceDetection();
+    console.log('ml5 found, starting face detection');
+    try {
+      startFaceDetection();
+    } catch(e) {
+      console.error('Face detection failed:', e);
+    }
   } else {
+    console.log('ml5 not ready yet');
     setTimeout(checkML5, 1000);
   }
 }
@@ -172,63 +201,98 @@ function detectFaces() {
 function draw() {
   background(255);
   
+  // Show loading message if webcam not ready
+  if (!capture || !capture.loadedmetadata) {
+    push();
+    fill(0);
+    textSize(20);
+    textAlign(CENTER, CENTER);
+    text('Loading webcam...', width/2, height/2);
+    pop();
+    return;
+  }
+  
   // LAYER 1: Y2K glitchy digital style
-  drawY2KStyle();
+  try {
+    drawY2KStyle();
+  } catch(e) {
+    console.error('Y2K style error:', e);
+  }
   
   // LAYER 2: Flashing overlay (when face detected)
-  if (detections.length > 0 && overlayImg) {
-    let flashInterval = 30;
-    let showOverlay = floor(frameCount / flashInterval) % 2 === 0;
-    if (showOverlay) {
-      if (frameCount % 2 === 0 || !window.cachedOverlay) {
-        let pg = createGraphics(width, height);
-        pg.image(overlayImg, 0, 0, width, height);
-        pg.loadPixels();
-        
-        let pixelatedOverlay = createGraphics(width, height);
-        pixelatedOverlay.noSmooth();
-        pixelatedOverlay.noStroke();
-        
-        for (let y = 0; y < height; y += overlayPixelSize) {
-          for (let x = 0; x < width; x += overlayPixelSize) {
-            let index = (floor(y) * width + floor(x)) * 4;
-            let r = pg.pixels[index];
-            let g = pg.pixels[index + 1];
-            let b = pg.pixels[index + 2];
-            let a = pg.pixels[index + 3];
-            
-            pixelatedOverlay.fill(r, g, b, a);
-            pixelatedOverlay.rect(x, y, overlayPixelSize, overlayPixelSize);
+  if (detections.length > 0 && overlayImg && overlayImg.width > 0) {
+    try {
+      let flashInterval = 30;
+      let showOverlay = floor(frameCount / flashInterval) % 2 === 0;
+      if (showOverlay) {
+        if (frameCount % 2 === 0 || !window.cachedOverlay) {
+          let pg = createGraphics(width, height);
+          pg.image(overlayImg, 0, 0, width, height);
+          pg.loadPixels();
+          
+          let pixelatedOverlay = createGraphics(width, height);
+          pixelatedOverlay.noSmooth();
+          pixelatedOverlay.noStroke();
+          
+          for (let y = 0; y < height; y += overlayPixelSize) {
+            for (let x = 0; x < width; x += overlayPixelSize) {
+              let index = (floor(y) * width + floor(x)) * 4;
+              let r = pg.pixels[index];
+              let g = pg.pixels[index + 1];
+              let b = pg.pixels[index + 2];
+              let a = pg.pixels[index + 3];
+              
+              pixelatedOverlay.fill(r, g, b, a);
+              pixelatedOverlay.rect(x, y, overlayPixelSize, overlayPixelSize);
+            }
           }
+          
+          if (window.cachedOverlay) window.cachedOverlay.remove();
+          window.cachedOverlay = pixelatedOverlay;
+          pg.remove();
         }
         
-        if (window.cachedOverlay) window.cachedOverlay.remove();
-        window.cachedOverlay = pixelatedOverlay;
-        pg.remove();
+        if (window.cachedOverlay) {
+          image(window.cachedOverlay, 0, 0, width, height);
+        }
       }
-      
-      if (window.cachedOverlay) {
-        image(window.cachedOverlay, 0, 0, width, height);
-      }
+    } catch(e) {
+      console.error('Overlay error:', e);
     }
   }
   
   // LAYER 3: Cat ears (when face detected)
   if (faceapiReady && detections.length > 0) {
-    drawCatEars();
+    try {
+      drawCatEars();
+    } catch(e) {
+      console.error('Cat ears error:', e);
+    }
   }
   
   // LAYER 4: Video frame with transparency
   if (vid && vid.loadedmetadata) {
-    drawVideoFrame();
+    try {
+      drawVideoFrame();
+    } catch(e) {
+      console.error('Video frame error:', e);
+    }
   }
   
   // LAYER 5: Nico Nico style comments
-  drawComments();
+  try {
+    drawComments();
+  } catch(e) {
+    console.error('Comments error:', e);
+  }
   
   // LAYER 6: Random button (bottom center)
-  if (randomButtonImg) {
-    drawRandomButton();
+  if (randomButtonImg && randomButtonImg.width > 0) {
+    try {
+      drawRandomButton();
+    } catch(e) {
+      console.error('Button error:', e);
+    }
   }
 }
 
@@ -413,28 +477,18 @@ function drawRandomButton() {
   imageMode(CENTER);
   let buttonX = width / 2;
   
-  // DEBUG: Draw hit area (remove this later)
+  // Remove debug visuals - clean version
   noFill();
-  stroke(255, 0, 0, 100);
-  strokeWeight(2);
-  rectMode(CENTER);
-  rect(buttonX, buttonY, buttonWidth * 1.5, buttonHeight * 1.5);
+  noStroke();
   
   // Visual feedback when pressed
   if (buttonPressed && frameCount - buttonPressFrame < 10) {
-    tint(255, 200); // Slight dim effect
+    tint(255, 200);
     image(randomButtonImg, buttonX, buttonY, buttonWidth * 0.95, buttonHeight * 0.95);
   } else {
     noTint();
     image(randomButtonImg, buttonX, buttonY, buttonWidth, buttonHeight);
   }
-  
-  // DEBUG: Show touch coordinates
-  fill(255);
-  noStroke();
-  textSize(10);
-  textAlign(CENTER);
-  text('Touch here to randomize', buttonX, buttonY + 50);
   
   pop();
 }
@@ -462,7 +516,7 @@ function touchEnded() {
 
 function checkRandomButtonClick() {
   // Check if click/touch is on the random button
-  if (randomButtonImg) {
+  if (randomButtonImg && randomButtonImg.width > 0) {
     let buttonX = width / 2;
     let halfWidth = (buttonWidth * 1.5) / 2;  // 1.5x larger hit area
     let halfHeight = (buttonHeight * 1.5) / 2;
@@ -474,14 +528,6 @@ function checkRandomButtonClick() {
     if (canvasX > buttonX - halfWidth && canvasX < buttonX + halfWidth &&
         canvasY > buttonY - halfHeight && canvasY < buttonY + halfHeight) {
       randomizeEffects();
-      
-      // Add a visible flash to confirm it worked
-      background(255);
-      fill(0);
-      textSize(32);
-      textAlign(CENTER, CENTER);
-      text('RANDOMIZED!', width/2, height/2);
-      
       return true;
     }
   }
