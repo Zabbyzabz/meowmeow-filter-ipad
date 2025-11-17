@@ -25,8 +25,8 @@ let buttonPressed = false;
 let buttonPressFrame = 0;
 
 // Random button settings
-let buttonWidth = 68;
-let buttonHeight = 68;
+let buttonWidth = 72;
+let buttonHeight = 72;
 let buttonY = 0; // Will be calculated in setup based on canvas height
 
 const DITHER = [[0, 2], [3, 1]];
@@ -73,8 +73,8 @@ function preload() {
 }
 
 function setup() {
-  // Larger canvas size - 1.3x bigger (500 * 1.3 = 650)
-  let canvasSize = 650;
+  // Larger canvas size - 1.45x bigger (500 * 1.45 = 725)
+  let canvasSize = 725;
   
   // Canvas positioned center-left
   let canvas = createCanvas(canvasSize, canvasSize);
@@ -91,7 +91,7 @@ function setup() {
   capture.hide();
   
   // Set button position relative to canvas height
-  buttonY = height - 36; // 60px from bottom
+  buttonY = height - 60; // 60px from bottom
   
   textFont('monospace');
   textAlign(CENTER, CENTER);
@@ -459,8 +459,9 @@ function drawCatEars() {
     const earsWidth = faceWidth * 1.7;
     const earsHeight = catEarsImg ? earsWidth * (catEarsImg.height / catEarsImg.width) : earsWidth;
     
-    const earsX = centerX + 70;
-    const earsY = topY - earsHeight * 0.8;
+    // PROPORTIONAL POSITIONING - scales with face distance
+    const earsX = centerX + (faceWidth * 0.35);  // ← Adjust multiplier (currently 0.35)
+    const earsY = topY - earsHeight * 0.8;  // ← Adjust Y multiplier (currently 0.8)
     
     if (catEarsImg && catEarsImg.width > 0) {
       imageMode(CENTER);
@@ -468,6 +469,14 @@ function drawCatEars() {
       image(catEarsImg, earsX, earsY, earsWidth, earsHeight);
       noTint();
     }
+    
+    // DEBUG: Green face detection box
+    noFill();
+    stroke(0, 255, 0);
+    strokeWeight(3);
+    const mirroredX = width - ((box._x + box._width) * scaleX);
+    const rectY = box._y * scaleY;
+    rect(mirroredX, rectY, box._width * scaleX, box._height * scaleY);
   }  
   pop();
 }
@@ -493,12 +502,12 @@ function drawRandomButton() {
     image(randomButtonImg, buttonX, buttonY, buttonWidth, buttonHeight);
   }
   
-  // DEBUG: Show touch text
+  // DEBUG: Show touch text (closer to button)
   fill(255);
   noStroke();
   textSize(10);
   textAlign(CENTER);
-  text('touch here', buttonX, buttonY + 50);
+  text('touch here', buttonX, buttonY + 20);  // Changed to +20
   
   pop();
 }
@@ -549,18 +558,18 @@ function randomizeEffects() {
   buttonPressed = true;
   buttonPressFrame = frameCount;
   
-  // Randomize color settings
-  brightnessBoost = random(0.8, 1.8);
-  saturationBoost = random(1.0, 3.0);
-  contrastBoost = random(1.0, 2.5);
+  // Randomize color settings (safe ranges)
+  brightnessBoost = random(0.9, 1.6);  // Reduced range for stability
+  saturationBoost = random(1.2, 2.5);  // Reduced max from 3.0
+  contrastBoost = random(1.1, 2.0);    // Reduced max from 2.5
   
-  // Randomize pixelation
-  pixelSize = floor(random(1, 8));
-  overlayPixelSize = floor(random(1, 8));
+  // Randomize pixelation (KEEP HIGHER for performance - avoid 1-3)
+  pixelSize = floor(random(4, 8));  // Changed from (1, 8) to (4, 8) - no tiny pixels!
+  overlayPixelSize = floor(random(2, 6));  // Changed from (1, 8) to (2, 6)
   
-  // Randomly enable posterize
+  // Posterize: 50% chance, but limited levels
   posterizeEnabled = random() > 0.5;
   if (posterizeEnabled) {
-    posterizeLevels = floor(random(2, 12));
+    posterizeLevels = floor(random(4, 10));  // Changed from (2, 12) to (4, 10) - avoid extreme posterization
   }
 }
