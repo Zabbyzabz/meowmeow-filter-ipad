@@ -1,6 +1,3 @@
-// === PHOTOBOOTH - Y2K GLITCH DIGITAL AESTHETIC ===
-// iPad Installation Version - Optimized for gallery projection
-
 let vid, overlayImg, catEarsImg, randomButtonImg, capture;
 let faceapi, faceapiReady = false;
 let detections = [];
@@ -25,8 +22,8 @@ let buttonPressed = false;
 let buttonPressFrame = 0;
 
 // Random button settings
-let buttonWidth = 72;
-let buttonHeight = 72;
+let buttonWidth = 78;
+let buttonHeight = 78;
 let buttonY = 0; // Will be calculated in setup based on canvas height
 
 const DITHER = [[0, 2], [3, 1]];
@@ -91,7 +88,7 @@ function setup() {
   capture.hide();
   
   // Set button position relative to canvas height
-  buttonY = height - 60; // 60px from bottom
+  buttonY = height - 38; // 60px from bottom
   
   textFont('monospace');
   textAlign(CENTER, CENTER);
@@ -507,7 +504,7 @@ function drawRandomButton() {
   noStroke();
   textSize(10);
   textAlign(CENTER);
-  text('touch here', buttonX, buttonY + 20);  // Changed to +20
+  text('touch here', buttonX, buttonY + 10);  // Changed to +20
   
   pop();
 }
