@@ -73,8 +73,8 @@ function preload() {
 }
 
 function setup() {
-  // Smaller canvas size for iPad landscape (fits 1024x768 iPad screen)
-  let canvasSize = 500; // Reduced from 640
+  // Larger canvas size - 1.3x bigger (500 * 1.3 = 650)
+  let canvasSize = 650;
   
   // Canvas positioned center-left
   let canvas = createCanvas(canvasSize, canvasSize);
@@ -477,9 +477,12 @@ function drawRandomButton() {
   imageMode(CENTER);
   let buttonX = width / 2;
   
-  // Remove debug visuals - clean version
+  // DEBUG: Draw hit area
   noFill();
-  noStroke();
+  stroke(255, 0, 0, 100);
+  strokeWeight(2);
+  rectMode(CENTER);
+  rect(buttonX, buttonY, buttonWidth * 1.5, buttonHeight * 1.5);
   
   // Visual feedback when pressed
   if (buttonPressed && frameCount - buttonPressFrame < 10) {
@@ -489,6 +492,13 @@ function drawRandomButton() {
     noTint();
     image(randomButtonImg, buttonX, buttonY, buttonWidth, buttonHeight);
   }
+  
+  // DEBUG: Show touch text
+  fill(255);
+  noStroke();
+  textSize(10);
+  textAlign(CENTER);
+  text('touch here', buttonX, buttonY + 50);
   
   pop();
 }
